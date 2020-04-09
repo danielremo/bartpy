@@ -141,8 +141,14 @@ def log_probability_split_within_node(mutation: GrowMutation) -> float:
 
 
 def log_probability_node_split(model: Model, node: TreeNode):
-    return np.log(model.alpha * np.power(1 + node.depth, -model.beta))
+    if model.prior_name == "poly_splits":
+        return np.log(model.alpha * np.power(1 + node.depth, -model.beta))
+    elif model.prior_name == "exponential_splits":
+        return -node.depth*np.log(model.Gamma)
 
 
 def log_probability_node_not_split(model: Model, node: TreeNode):
-    return np.log(1. - model.alpha * np.power(1 + node.depth, -model.beta))
+    if model.prior_name == "poly_splits":
+        return np.log(1-model.alpha * np.power(1 + node.depth, -model.beta))
+    elif model.prior_name == "exponential_splits":
+        return np.log(1-np.power(model.Gamma, -node.depth))

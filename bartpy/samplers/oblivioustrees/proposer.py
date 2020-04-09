@@ -23,8 +23,9 @@ def prune_mutations(tree: Tree) -> List[TreeMutation]:
 class UniformMutationProposer(TreeMutationProposer):
 
     def __init__(self,
-                 p_grow: float=0.5,
-                 p_prune: float=0.5):
+                 p_grow: float=1/3,
+                 p_prune: float=1/3,
+                 p_change: float=1/3):
         self.method_sampler = DiscreteSampler([grow_mutations, prune_mutations],
                                               [p_grow, p_prune],
                                               cache_size=1000)

@@ -4,7 +4,7 @@ from typing import Callable, List, Mapping, Optional, Tuple
 import numpy as np
 
 from bartpy.errors import NoSplittableVariableException, NoPrunableNodeException
-from bartpy.mutation import TreeMutation, GrowMutation, PruneMutation
+from bartpy.mutation import TreeMutation, GrowMutation, PruneMutation, ChangeMutation
 from bartpy.node import LeafNode, DecisionNode, split_node
 from bartpy.samplers.scalar import DiscreteSampler
 from bartpy.samplers.treemutation import TreeMutationProposer
@@ -24,6 +24,13 @@ def uniformly_sample_prune_mutation(tree: Tree) -> TreeMutation:
     return PruneMutation(node, updated_node)
 
 
+def uniformly_sample_change_mutation(tree: Tree) -> TreeMutation:
+    node = random_prunable_decision_node(tree)
+    updated_node = LeafNode(node.split, depth=node.depth)
+    updated_node = sample_split_node(updated_node)
+    return ChangeMutation(node, updated_node)
+
+
 class UniformMutationProposer(TreeMutationProposer):
 
     def __init__(self,
@@ -33,8 +40,10 @@ class UniformMutationProposer(TreeMutationProposer):
             self.prob_method_lookup = prob_method_lookup
         else:
             if prob_method is None:
-                prob_method = [0.5, 0.5]
-            self.prob_method_lookup = {x[0]: x[1] for x in zip([uniformly_sample_grow_mutation, uniformly_sample_prune_mutation], prob_method)}
+                prob_method = [0.28, 0.28, 0.44]
+            self.prob_method_lookup = {x[0]: x[1] for x in zip([uniformly_sample_grow_mutation,
+                                                                uniformly_sample_prune_mutation,
+                                                                uniformly_sample_change_mutation], prob_method)}
         self.methods = list(self.prob_method_lookup.keys())
         self.method_sampler = DiscreteSampler(list(self.prob_method_lookup.keys()),
                                               list(self.prob_method_lookup.values()),
@@ -44,9 +53,7 @@ class UniformMutationProposer(TreeMutationProposer):
         method = self.method_sampler.sample()
         try:
             return method(tree)
-        except NoSplittableVariableException:
-            return self.propose(tree)
-        except NoPrunableNodeException:
+        except (NoSplittableVariableException, NoPrunableNodeException, TypeError):
             return self.propose(tree)
 
 
@@ -83,7 +90,10 @@ def sample_split_condition(node: LeafNode) -> Optional[Tuple[SplitCondition, Spl
 
     Returns None if there isn't a possible non-degenerate split
     """
-    split_variable = np.random.choice(list(node.split.data.splittable_variables()))
+    try:
+        split_variable = np.random.choice(list(node.split.data.splittable_variables()))
+    except ValueError:
+        return None
     split_value = node.data.random_splittable_value(split_variable)
     if split_value is None:
         return None

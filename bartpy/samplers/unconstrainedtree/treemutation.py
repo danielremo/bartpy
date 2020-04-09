@@ -1,5 +1,5 @@
 from typing import Optional
-
+import numpy as np
 from bartpy.model import Model
 from bartpy.mutation import TreeMutation
 from bartpy.samplers.sampler import Sampler
@@ -38,10 +38,9 @@ class UnconstrainedTreeMutationSampler(Sampler):
     def sample(self, model: Model, tree: Tree) -> Optional[TreeMutation]:
         proposal = self.proposer.propose(tree)
         ratio = self.likihood_ratio.log_probability_ratio(model, tree, proposal)
-        if self._scalar_sampler.sample() < ratio:
+        if np.log(self._scalar_sampler.sample()) < ratio:
             return proposal
-        else:
-            return None
+        return None
 
     def step(self, model: Model, tree: Tree) -> Optional[TreeMutation]:
         mutation = self.sample(model, tree)
@@ -50,8 +49,9 @@ class UnconstrainedTreeMutationSampler(Sampler):
         return mutation
 
 
-def get_unconstrained_tree_sampler(p_grow: float,
-                                   p_prune: float):
-    proposer = UniformMutationProposer([p_grow, p_prune])
-    likihood = UniformTreeMutationLikihoodRatio([p_grow, p_prune])
+def get_tree_sampler(p_grow: float,
+                     p_prune: float,
+                     p_change: float) -> Sampler:
+    proposer = UniformMutationProposer([p_grow, p_prune, p_change])
+    likihood = UniformTreeMutationLikihoodRatio([p_grow, p_prune, p_change])
     return UnconstrainedTreeMutationSampler(proposer, likihood)
