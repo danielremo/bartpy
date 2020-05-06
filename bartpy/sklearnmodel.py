@@ -6,7 +6,7 @@ import pandas as pd
 from joblib import Parallel, delayed
 from sklearn.base import RegressorMixin, BaseEstimator
 from scipy.stats.distributions import chi2
-import statsmodels.api as sm
+from sklearn.linear_model import LinearRegression
 
 from bartpy.data import Data
 from bartpy.initializers.initializer import Initializer
@@ -203,7 +203,10 @@ class SklearnModel(BaseEstimator, RegressorMixin):
 
     def _set_sigma_a_and_sigma_b(self, X: np.ndarray, y: np.ndarray):
         if self.over_estimate_method == "linreg":
-            sigma_hat = sm.OLS(y, X).fit().ssr
+            lin_mod = LinearRegression()
+            lin_mod.fit(X, y)
+            SSR = np.sum((lin_mod.predict(X) - y)**2)
+            sigma_hat = np.sqrt(SSR / (X.shape[0] - X.shape[1] - 1) 
         else:
             sigma_hat = np.std(y)
         lam = chi2.ppf(1 - self.q, df=self.nu) * (sigma_hat ** 2) / self.nu
