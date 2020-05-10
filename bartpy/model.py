@@ -72,14 +72,6 @@ class Model:
             X = X.values
         return np.sum([tree.predict(X) for tree in self.trees], axis=0)
 
-    def _out_of_sample_credible_set(self, X: np.ndarray, gamma: float):
-        if type(X) == pd.DataFrame:
-            X: pd.DataFrame = X
-            X = X.values
-        lower = np.quantile([tree.predict(X) for tree in self.trees], gamma/2, interpolation="lower")
-        higher = np.quantile([tree.predict(X) for tree in self.trees], 1-gamma/2, interpolation="higher")
-        return lower, higher
-
     @property
     def trees(self) -> List[Tree]:
         return self._trees
